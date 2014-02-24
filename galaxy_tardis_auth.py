@@ -1,4 +1,6 @@
 #!/usr/bin/python
+#myTardisServer="https://testmytardis.ammrf.org.au/"
+#galaxyServer="https://testgalaxy.ammrf.org.au/"
 myTardisServer="https://mytardis.ammrf.org.au/"
 galaxyServer="https://galaxy.ammrf.org.au/"
 import json
@@ -171,7 +173,7 @@ This file needs to be kept secret (it is equilivent to your MyTardis password)""
     def setAPIKeyInGalaxy(self,apikey):
         apiFile=StringIO.StringIO(apikey)
         authenticated=False
-        url="%s/user/login/"%galaxyServer
+        url="%s/user/login"%galaxyServer
         retry=False
         while not authenticated:
             if retry:
@@ -184,13 +186,13 @@ This file needs to be kept secret (it is equilivent to your MyTardis password)""
                 authData={'email':dlg.getUser(),'password':dlg.getPassword()}
                 wx.BeginBusyCursor()
                 s=requests.Session()
-                r=s.get(url)
+                r=s.get(url,allow_redirects=False)
                 p=genericForm()
                 p.feed(r.text)
                 p.inputs.update(authData)
                 r=s.post(url,data=p.inputs)
                 wx.EndBusyCursor()
-                if "You are now logged in" in r.text:
+		if not '<input type="password" name="password" value="" size="40"/>' in r.text:
                     authenticated=True
                 retry=True
             else:
@@ -202,8 +204,11 @@ This file needs to be kept secret (it is equilivent to your MyTardis password)""
             p=genericForm()
             p.feed(r.text)
             # not sure if its necessary to post both data and files, but since galaxy doesn't allow the API key to be reset, and Tardis doesn't allow generating a new key, its kind of difficult to test
-            del p.inputs['new_mytardis_api_key_file']
-            r=s.post(url,data=p.inputs,files={'new_mytardis_api_key_file':("chrishines.key",apiFile)})
+            try:
+            	del p.inputs['new_mytardis_api_key_file']
+            except:
+                pass
+            r=s.post(url,data=p.inputs,files={'new_mytardis_api_key_file':("user.key",apiFile)})
             wx.EndBusyCursor()
             return True
         else:
